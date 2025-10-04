@@ -8,21 +8,22 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State var isShowingInfo: Bool = false
-    @State var isShowingSelectCurrency: Bool = false
-    @State var leftAmount: String = ""
-    @State var rightAmount: String = ""
-    @State var leftCurrency: Currency = .silverPiece
-    @State var rightCurrency: Currency = .goldPiece
+    @FocusState private var leftField: Bool
+    @FocusState private var rightField: Bool
     
+    @State private var isShowingInfo: Bool = false
+    @State private var isShowingSelectCurrency: Bool = false
+    @State private var leftAmount: String = ""
+    @State private var rightAmount: String = ""
+    @State private var leftCurrency = Currency.silverPiece
+    @State private var rightCurrency = Currency.goldPiece
+
     var body: some View {
         ZStack {
             Image(.background)
                 .resizable()
-                .scaledToFill()
                 .ignoresSafeArea()
-                .frame(minWidth: 0, maxWidth: .infinity)
-            
+
             VStack {
                 Image(.prancingpony)
                     .resizable()
@@ -34,7 +35,6 @@ struct ContentView: View {
                 
                 HStack {
                     VStack {
-                        
                         Spacer()
                             .frame(height: 15)
                         
@@ -52,8 +52,10 @@ struct ContentView: View {
                         }
                         
                         TextField("Amount", text: $leftAmount)
+                            .keyboardType(.numberPad)
+                            .focused($leftField)
                             .textFieldStyle(.roundedBorder)
-                        
+                         
                         Spacer()
                             .frame(height: 10)
                     }
@@ -63,7 +65,6 @@ struct ContentView: View {
                         .symbolEffect(.bounce)
                     
                     VStack {
-                        
                         Spacer()
                             .frame(height: 15)
                         
@@ -81,12 +82,14 @@ struct ContentView: View {
                         }
                         
                         TextField("Amount", text: $rightAmount)
+                            .keyboardType(.numberPad)
+                            .focused($rightField)
                             .textFieldStyle(.roundedBorder)
                             .multilineTextAlignment(.trailing)
                         
                         Spacer()
                             .frame(height: 10)
-                     }
+                    }
                 }
                 .padding(.horizontal)
                 .background(.black.opacity(0.5))
@@ -103,18 +106,52 @@ struct ContentView: View {
                             .font(.largeTitle)
                             .foregroundStyle(isShowingInfo ? .white : .yellow)
                     }
-                    .padding(.trailing)
-                    .sheet(isPresented: $isShowingInfo, content: {
-                        ExchangeInfo()
-                    })
+                    .padding()
+                    .ignoresSafeArea(.keyboard)
                 }
             }
-        }.sheet(isPresented: $isShowingInfo, content: {
-            ExchangeInfo()
-        })
+        }
+        .onChange(of: leftAmount) {
+            rightAmount = leftCurrency.calculateConversion(
+                amountString: leftAmount,
+                currency: rightCurrency
+            )
+        }
+        .onChange(of: leftCurrency) {
+            rightAmount = leftCurrency.calculateConversion(
+                amountString: leftAmount,
+                currency: rightCurrency
+            )
+        }
+        .onChange(of: rightAmount) {
+            leftAmount = rightCurrency.calculateConversion(
+                amountString: rightAmount,
+                currency: leftCurrency
+            )
+        }
+        .onChange(of: rightCurrency) {
+            leftAmount = rightCurrency.calculateConversion(
+                amountString: rightAmount,
+                currency: leftCurrency
+            )
+        }
+        .frame(maxWidth: .infinity)
+        .ignoresSafeArea(.keyboard)
         .sheet(isPresented: $isShowingSelectCurrency, content: {
             SelectCurrency(startingCurrency: $leftCurrency, convertingToCurrency: $rightCurrency)
         })
+        .sheet(isPresented: $isShowingInfo, content: {
+            ExchangeInfo()
+        })
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    leftField = false // Dismisses the keyboard
+                    rightField = false // Dismisses the keyboard
+                }
+            }
+        }
     }
 }
 

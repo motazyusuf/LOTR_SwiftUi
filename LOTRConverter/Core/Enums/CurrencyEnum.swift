@@ -45,4 +45,20 @@ enum Currency: Double, CaseIterable, Identifiable {
         }
     }
     
+    func calculateConversion(amountString: String, currency: Currency) -> String {
+        guard let amountDouble = Double(amountString) else {
+            return ""
+        }
+        
+        let result = (amountDouble / self.rawValue) * currency.rawValue
+        
+        // If it's whole, show as Int; otherwise show as Double
+        if result.truncatingRemainder(dividingBy: 1) == 0 {
+            return String(Int(result))
+        } else {
+            return String(result)
+        }
+    }
+
+    
 }
